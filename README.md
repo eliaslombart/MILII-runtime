@@ -8,6 +8,18 @@ It is important to note that MILII only handles syntax, not the actual implement
 
 ## Installation & examples
 
+To install, simply clone the repository and `import` into your python project.
+
+```sh
+git clone https://github.com/eliaslombart/MILII-runtime.git
+```
+
+```python
+import milii/src/milii
+```
+
+Examples can be found in the `examples` directory.
+
 ## Technical overview
 
 MILII is explained as a sigil-based language, although it can be argued to be a circumfix-based one. The reason for this architecture is that this foregoes actual tokenizing. Instead, the parser can read character by character until it reaches a known sigil, at which point it dispatches the according subparser. After the subparser is done, the main parser resumes where the subparser left off.
