@@ -253,7 +253,7 @@ def run(code, *, stack=None):
             index += index_offset
 
             if index < -1:
-                raise InterpreterRuntimeError(f"Parser return {index_offset} as its index-offset, which caused the file pointer to be {index}, which is an illigal state.")
+                raise InterpreterRuntimeError(f"Parser returned {index_offset} as its index-offset, which caused the file pointer to be {index}, which is an illigal state.")
 
             if executable:
                 # if the result should be executed, do so
