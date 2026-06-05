@@ -49,7 +49,7 @@ class Stack(StackInterface):
 
         return self._stack.pop(-1)
 
-    def popn(self, number: int) -> tuple[Any, ...]:
+    def pop_n(self, number: int) -> tuple[Any, ...]:
         """pops and returns the top `number` items of the stack, in top-to-bottom order"""
         if not isinstance(number, int):
             raise self.StackError(f"`number` should be int, not {type(number).__name__}")
@@ -65,9 +65,9 @@ class Stack(StackInterface):
             for _ in range(number)
         )[::-1]
 
-    def popall(self) -> tuple[Any, ...]:
+    def pop_all(self) -> tuple[Any, ...]:
         """pops and returns all the items of the stack, in top-to-bottom order"""
-        return self.popn(
+        return self.pop_n(
             len(self._stack)
         )
 
@@ -76,7 +76,7 @@ class Stack(StackInterface):
         if not (value is None):
             self._stack.append(value)
 
-    def pushall(self, values: Iterable[Any]) -> None:
+    def push_all(self, values: Iterable[Any]) -> None:
         """pushes `values` onto the stack, `values` should be iterable"""
         for v in values:
             self.push(v)
@@ -186,7 +186,7 @@ def sigil(parser: Callable | None = None, *, sigil: str, executable: bool = Fals
 
     return decorator
 
-def isbuiltin(function: str) -> bool:
+def is_builtin(function: str) -> bool:
     """
     Returns whether the given function name is known to be executable.
     """
@@ -225,7 +225,7 @@ def simpleparser(*, end: str, cast: Callable = lambda x: x) -> Callable[str, tup
     return parser
 
 def _get_builtin(f: str) -> Callable:
-    if not isbuiltin(f):
+    if not is_builtin(f):
         raise InterpreterRuntimeError(f"`{f}` is not a recognized builtin function.")
 
     return _builtins[f]
