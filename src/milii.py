@@ -2,13 +2,9 @@ from typing import Any, Iterable, Callable, Protocol, runtime_checkable
 
 @runtime_checkable
 class StackInterface(Protocol):
-    """
-    An interface for custom `Stack` classes. Note that the class does not have to be stack-based.
-    All that is required is a `.push` method, which takes a value as an argument.
-    """
+    """    Protocol for objects that can receive values via `.push()`."""
     def push(self, value: Any) -> None:
         ...
-
 
 class Stack(StackInterface):
     """
@@ -26,15 +22,15 @@ class Stack(StackInterface):
         def __init__(self, msg) -> None:
             super().__init__(msg)
 
-    def __init__(self, *, data: Iterable = None) -> None:
-        """create a new `Stack` class, type of `data` is a iterable"""
+    def __init__(self, *, data: Iterable[Any] | None = None) -> None:
+        """Create a new Stack. `data`, if provided, must be iterable."""
         self._stack = []
 
         if not (data is None):
             try:
                 iter(data)
             except TypeError:
-                raise TypeError(f"`data` should be iterable, not {type(data)}.")
+                raise TypeError(f"`data` should be Iterable, not {type(data).__name__}.")
 
             for v in data:
                 self.push(v)
@@ -54,15 +50,15 @@ class Stack(StackInterface):
         return self._stack.pop(-1)
 
     def popn(self, number: int) -> tuple[Any, ...]:
-        """pops and returns the top `n` items of the stack"""
+        """pops and returns the top `number` items of the stack, in top-to-bottom order"""
         if not isinstance(number, int):
-            raise self.StackError(f"`n` should be an integer, not {type(number)}")
+            raise self.StackError(f"`number` should be int, not {type(number).__name__}")
 
         if number < 0:
-            raise self.StackError(f"Cannot pop a negative number from a stack. Was given: {number}.")
+            raise self.StackError(f"cannot pop a negative number from a stack. Was given: {number}.")
 
         if len(self._stack) < number:
-            raise self.StackError(f"Cannot pop {number} items from a stack with {len(self._stack)} items.")
+            raise self.StackError(f"cannot pop {number} items from a stack with {len(self._stack)} items.")
 
         return tuple(
             self._stack.pop(-1)
@@ -70,20 +66,20 @@ class Stack(StackInterface):
         )[::-1]
 
     def popall(self) -> tuple[Any, ...]:
-        """pops and returns all the items of the stack"""
+        """pops and returns all the items of the stack, in top-to-bottom order"""
         return self.popn(
             len(self._stack)
         )
 
-    def push(self, v: Any) -> None:
-        """pushes the value `v` onto the stack"""
-        if not (v is None):
-            self._stack.append(v)
+    def push(self, value: Any) -> None:
+        """pushes `value` onto the stack"""
+        if not (value is None):
+            self._stack.append(value)
 
-    def pushall(self, v: Iterable[Any]) -> None:
-        """pushes the values `v` onto the stack, `v` should be iterable"""
-        for e in v:
-            self.push(e)
+    def pushall(self, values: Iterable[Any]) -> None:
+        """pushes `values` onto the stack, `values` should be iterable"""
+        for v in values:
+            self.push(v)
 
     def __str__(self) -> str:
         return f"<bottom {self._stack} top>"
@@ -99,12 +95,12 @@ class InterpreterRuntimeError(Exception):
     def __init__(self, msg: str) -> None:
         super().__init__(msg)
 
-_builtins = {}
-_sigils = {}
+_builtins: dict[str, Callable]              = {}
+_sigils:   dict[str, tuple[Callable, bool]] = {}
 
-def builtin(function: Callable = None, *, name: str = None) -> Callable:
+def builtin(function: Callable | None = None, *, name: str | None = None) -> Callable:
     """
-    Adds the callable `func` to the list of builtin functions. These are called when a executable sigilblock matches the name of one the callables. A function accepts one argument: the stack.
+    Register a callable as a builtin function. These are called when a executable sigilblock matches the name of one the callables. A function accepts one argument: the stack.
     Functions can return a value if they wish. If using the provided `Stack` class, `None` will be ignored
     The optional `name` parameter should be a string. It can overwrite `func.__name__`, or add that functionality
     completely.
@@ -122,13 +118,13 @@ def builtin(function: Callable = None, *, name: str = None) -> Callable:
         fname = name or f.__name__
 
         if not isinstance(fname, str):
-            raise TypeError(f"A renamed @builtin function name must be a String, not a {type(fname)}.")
+            raise TypeError(f"A renamed @builtin function name must be a string, not a {type(fname).__name__}.")
 
         if fname in _builtins:
             raise NameError(f"`{fname}` is already in use in @builtin.")
 
         if not callable(f):
-            raise TypeError(f"`func` must be callable, not {type(f)}.")
+            raise TypeError(f"`func` must be callable, not {type(f).__name__}.")
 
         _builtins[fname] = f
         return f
@@ -138,10 +134,9 @@ def builtin(function: Callable = None, *, name: str = None) -> Callable:
 
     return decorator
 
-
-def sigil(parser: Callable = None, *, sigil: str, executable: bool = False) -> Callable:
+def sigil(parser: Callable | None = None, *, sigil: str, executable: bool = False) -> Callable:
     """
-    Adds the sigilparser `parser` to the list of parsers. `parser` should be a callable.
+    Register a parser for a sigil character. `parser` should be a callable.
     These parsers are called when the corresponding `sigil` is encountered in the code.
     The parser accepts a str, that starts at the sigil, for example:
     code = "Hello World!" .print 
@@ -154,7 +149,7 @@ def sigil(parser: Callable = None, *, sigil: str, executable: bool = False) -> C
     `sigil` should be a string of length 1, that denotes the start of the block that should be parsed.
     The ending/closing character is handled by the sigilparser.
 
-    `executable` is used to denote wether the returned `value` from the parser should be executed (or attempted to be).
+    `executable` is used to denote whether the returned `value` from the parser should be executed (or attempted to be).
     The <.print > from earlier could be an example of when you would use it. To enable, set it to True.
     If `executable` (remains) False, the returned `value` is instead pushed to the stack.
 
@@ -171,13 +166,13 @@ def sigil(parser: Callable = None, *, sigil: str, executable: bool = False) -> C
 
     def decorator(p: Callable) -> Callable:
         if not isinstance(sigil, str):
-            raise TypeError(f"`sigil` must be a string of length 1, not a {type(sigil)}.")
+            raise TypeError(f"`sigil` must be a string of length 1, not a {type(sigil).__name__}.")
 
         if len(sigil) != 1:
             raise ValueError(f"`sigil` must be a string of length 1, not {len(sigil)}.")
 
         if not callable(p):
-            raise TypeError(f"`parser` must be callable or a function, not {type(p)}.")
+            raise TypeError(f"`parser` must be callable or a function, not {type(p).__name__}.")
 
         if sigil in _sigils:
             raise NameError(f"`{sigil}` is already in use as a sigil.")
@@ -191,18 +186,16 @@ def sigil(parser: Callable = None, *, sigil: str, executable: bool = False) -> C
 
     return decorator
 
-
 def isbuiltin(function: str) -> bool:
     """
-    Returns wether the given function name is known to be executable.
+    Returns whether the given function name is known to be executable.
     """
     return function in _builtins
 
-
 def simpleparser(*, end: str, cast: Callable = lambda x: x) -> Callable[str, tuple[Any, int]]:
     """
-    Very simple iterface for making a parser that ends at a character `end`.
-    `cast` can be used to transform the resulting string into something usable.
+    Very simple interface for making a parser that ends at a character `end`.
+    `cast` is applied to the parsed substring before it is returned.
 
     Example:
     # simple integer parser.
@@ -213,13 +206,13 @@ def simpleparser(*, end: str, cast: Callable = lambda x: x) -> Callable[str, tup
     """
 
     if not isinstance(end, str):
-        raise TypeError(f"`end` must be a string of length 1, not {type(end)}")
+        raise TypeError(f"`end` must be a string of length 1, not {type(end).__name__}")
 
     if len(end) != 1:
         raise ValueError(f"`end` must be of length 1, not {len(end)}")
 
     if not callable(cast):
-        raise TypeError(f"`cast` must be a function/callable, not {type(cast)}.")
+        raise TypeError(f"`cast` must be a function/callable, not {type(cast).__name__}.")
 
     def parser(code: str) -> tuple[Any, int]:
         index = 1
@@ -231,18 +224,16 @@ def simpleparser(*, end: str, cast: Callable = lambda x: x) -> Callable[str, tup
 
     return parser
 
-
-def _getbuiltin(f: str) -> Callable:
+def _get_builtin(f: str) -> Callable:
     if not isbuiltin(f):
         raise InterpreterRuntimeError(f"`{f}` is not a recognized builtin function.")
 
     return _builtins[f]
 
-
-def run(code: str, *, stack: StackInterface = None) -> StackInterface:
+def run(code: str, *, stack: StackInterface | None = None) -> StackInterface:
     """
-    `code` is the code that should be interpreted. It should be a String.
-    `stack` is the stackobject that should be used. It should support `stack.push(<value>)`.
+    `code` is the code that should be interpreted. It should be a string.
+    `stack` is the stack object that should be used. It should support `stack.push(<value>)`.
     If `stack` is omitted, a new stack will be created.
 
     For more info how the code is interpreted, see README.md.
@@ -255,7 +246,7 @@ def run(code: str, *, stack: StackInterface = None) -> StackInterface:
         stack = Stack()
 
     if not isinstance(stack, StackInterface):
-        raise AttributeError(f"`stack` must be an instance of `StackInterface`, not {type(stack)}.")
+        raise AttributeError(f"`stack` must be an instance of `StackInterface`, not {type(stack).__name__}.")
 
     index = 0
 
@@ -264,7 +255,7 @@ def run(code: str, *, stack: StackInterface = None) -> StackInterface:
         # if the current character is a known sigil
         if code[index] in _sigils:
 
-            # get the corresponding parser of the sigil and wether its result should be taken as
+            # get the corresponding parser of the sigil and whether its result should be taken as
             # a function call
             parser, executable = _sigils[code[index]]
 
@@ -273,20 +264,20 @@ def run(code: str, *, stack: StackInterface = None) -> StackInterface:
 
             if not isinstance(index_offset, int):
                 raise InterpreterRuntimeError(
-                    f"Parser returned ({type(parser_res)}, {type(index_offset)}), expected: (Any, int).")
+                    f"parser returned ({type(parser_res).__name__}, {type(index_offset).__name__}), expected: (Any, int).")
 
             index += index_offset
 
             if index < -1:
                 raise InterpreterRuntimeError(
-                    f"Parser returned {index_offset} as its index-offset, which caused the file pointer to be {index}, which is an illigal state.")
+                    f"parser returned {index_offset} as its index-offset, which caused the file pointer to be {index}, which is an illegal state.")
 
             if executable:
                 # if the result should be executed, do so
                 # by getting the corresponding function (if it exists)
                 # and calling it with the stack
                 stack.push(
-                    _getbuiltin(parser_res)(stack)
+                    _get_builtin(parser_res)(stack)
                 )
             else:
                 # otherwise push it to the stack
