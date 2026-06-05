@@ -49,7 +49,7 @@ class Stack(StackInterface):
 
         return self._stack.pop(-1)
 
-    def pop_n(self, number: int) -> tuple[Any, ...]:
+    def popn(self, number: int) -> tuple[Any, ...]:
         """pops and returns the top `number` items of the stack, in top-to-bottom order"""
         if not isinstance(number, int):
             raise self.StackError(f"`number` should be int, not {type(number).__name__}")
@@ -67,7 +67,7 @@ class Stack(StackInterface):
 
     def pop_all(self) -> tuple[Any, ...]:
         """pops and returns all the items of the stack, in top-to-bottom order"""
-        return self.pop_n(
+        return self.popn(
             len(self._stack)
         )
 

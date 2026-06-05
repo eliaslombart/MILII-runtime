@@ -38,7 +38,7 @@ def echo(stack):
 
 @builtin
 def add(stack):
-    a, b = stack.pop_n(2)
+    a, b = stack.popn(2)
     return a + b
 
 run(
