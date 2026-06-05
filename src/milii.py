@@ -1,3 +1,5 @@
+from typing import Any, Iterable, Callable
+
 _builtins = {}
 _sigils = {}
 
@@ -5,7 +7,7 @@ class InterpreterRuntimeError(Exception):
     """
     Custom Exception class, used when a error occurs during interpretation.
     """
-    def __init__(self, msg):
+    def __init__(self, msg: str):
         super().__init__(msg)
 
 class Stack:
@@ -22,7 +24,7 @@ class Stack:
         def __init__(self, msg):
             super().__init__(msg)
 
-    def __init__(self, *, data=None):
+    def __init__(self, *, data: Iterable = None):
         """create a new `Stack` class, type of `data` is a iterable"""
         self._stack = []
     
@@ -49,17 +51,17 @@ class Stack:
 
         return self._stack.pop(-1)
 
-    def popn(self, n):
+    def popn(self, number: int):
         """pops and returns the top `n` items of the stack"""
-        if not isinstance(n, int):
-            raise self.StackError(f"`n` should be an integer, not {type(n)}")
+        if not isinstance(number, int):
+            raise self.StackError(f"`n` should be an integer, not {type(number)}")
 
-        if len(self._stack) < n:
-            raise self.StackError(f"Cannot pop {n} items from a stack with {len(self._stack)} items.")
+        if len(self._stack) < number:
+            raise self.StackError(f"Cannot pop {number} items from a stack with {len(self._stack)} items.")
 
         return tuple(
             self._stack.pop(-1)
-            for _ in range(n)
+            for _ in range(number)
         )[::-1]
 
     def popall(self):
@@ -68,12 +70,12 @@ class Stack:
             len(self._stack)
         )
 
-    def push(self, v):
+    def push(self, v: Any):
         """pushes the value `v` onto the stack"""
         if not (v is None):
             self._stack.append(v)
     
-    def pushall(self, v):
+    def pushall(self, v: Iterable[Any]):
         """pushes the values `v` onto the stack, `v` should be iterable"""
         for e in v:
             self.push(e)
@@ -84,7 +86,7 @@ class Stack:
     def __repr__(self):
         return f"Stack(data={self._stack!r})"
 
-def builtin(func=None, *, name=None):
+def builtin(func: Callable = None, *, name: str = None):
     """
     Adds the callable `func` to the list of builtin functions. These are called when a executable sigilblock matches the name of one the callables. A callable accepts one argument: the stack.
     Callables should not return anything.
@@ -119,7 +121,7 @@ def builtin(func=None, *, name=None):
 
     return decorator
 
-def sigil(parser=None, *, sigil, executable=False):
+def sigil(parser: Callable = None, *, sigil: str, executable: bool = False):
     """
     Adds the sigilparser `parser` to the list of parsers. `parser` should be a callable.
     These parsers are called when the corresponding `sigil` is encountered in the code.
@@ -171,13 +173,13 @@ def sigil(parser=None, *, sigil, executable=False):
 
     return decorator
 
-def isbuiltin(f):
+def isbuiltin(function: str):
     """
     Returns wether the given function name is known to be executable.
     """
     return f in _builtins
 
-def simpleparser(*, end, cast=lambda x:x):
+def simpleparser(*, end: str, cast: Callable = lambda x:x):
     """
     Very simple iterface for making a parser that ends at a character `end`.
     `cast` can be used to transform the resulting string into something usable.
@@ -209,13 +211,13 @@ def simpleparser(*, end, cast=lambda x:x):
 
     return parser
 
-def _getbuiltin(f):
+def _getbuiltin(f: str):
     if not isbuiltin(f):
         raise InterpreterRuntimeError(f"`{f}` is not a recognized builtin function.")
     
     return _builtins[f]
 
-def run(code, *, stack=None):
+def run(code: str, *, stack = None):
     """
     `code` is the code that should be interpreted. It should be a String.
     `stack` is the stackobject that should be used. It should support `stack.push(<value>)`.
