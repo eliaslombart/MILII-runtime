@@ -1,12 +1,12 @@
 from milii import *
 
 sigil(
-    simpleparser(end=" ", cast=int),
+    simple_parser(end=" ", cast=int),
     sigil="$"
 )
 
 sigil(
-    simpleparser(end=" "),
+    simple_parser(end=" "),
     sigil=".",
     executable=True
 )

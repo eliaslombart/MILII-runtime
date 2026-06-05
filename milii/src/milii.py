@@ -192,7 +192,7 @@ def is_builtin(function: str) -> bool:
     """
     return function in _builtins
 
-def simpleparser(*, end: str, cast: Callable = lambda x: x) -> Callable[str, tuple[Any, int]]:
+def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Callable[[str], tuple[Any, int]]:
     """
     Very simple interface for making a parser that ends at a character `end`.
     `cast` is applied to the parsed substring before it is returned.
