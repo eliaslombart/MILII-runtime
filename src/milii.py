@@ -1,20 +1,11 @@
 from typing import Any, Iterable, Callable, Protocol, runtime_checkable
 
-_builtins = {}
-_sigils = {}
-
-
-class InterpreterRuntimeError(Exception):
-    """
-    Custom Exception class, used when a error occurs during interpretation.
-    """
-
-    def __init__(self, msg: str) -> None:
-        super().__init__(msg)
-
-
 @runtime_checkable
 class StackInterface(Protocol):
+    """
+    An interface for custom `Stack` classes. Note that the class does not have to be stack-based.
+    All that is required is a `.push` method, which takes a value as an argument.
+    """
     def push(self, value: Any) -> None:
         ...
 
@@ -100,6 +91,16 @@ class Stack(StackInterface):
     def __repr__(self) -> str:
         return f"Stack(data={self._stack!r})"
 
+class InterpreterRuntimeError(Exception):
+    """
+    Custom Exception class, used when a error occurs during interpretation.
+    """
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(msg)
+
+_builtins = {}
+_sigils = {}
 
 def builtin(function: Callable = None, *, name: str = None) -> Callable:
     """
@@ -254,7 +255,7 @@ def run(code: str, *, stack: StackInterface = None) -> StackInterface:
         stack = Stack()
 
     if not isinstance(stack, StackInterface):
-        raise AttributeError("It seems `stack` does not support `stack.push(value)`.")
+        raise AttributeError(f"`stack` must be an instance of `StackInterface`, not {type(stack)}.")
 
     index = 0
 
