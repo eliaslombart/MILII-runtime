@@ -1,19 +1,18 @@
 from typing import Any, Iterable, Callable, Protocol, runtime_checkable
 
 @runtime_checkable
-class StackInterface(Protocol):
+class DataInterface(Protocol):
     """    Protocol for objects that can receive values via `.push()`."""
     def push(self, value: Any) -> None:
         ...
 
-class Stack(StackInterface):
+class Stack(DataInterface):
     """
     A Stack class.
 
-    If multiple items are returned through popn and popall, they are returned as a list, where the first element was the lowest item.
+    If multiple items are returned through popn and pop_all, they are returned as a list, where the first element was the lowest item.
 
-    Pushall pushes the first element of the iterable first, so the first element is the bottommost element.
-    If a type `None` is pushed, it is ignored instead.
+    `push_all` pushes the first element of the iterable first, so the first element is the bottommost element.
     """
 
     class StackError(Exception):
@@ -26,7 +25,7 @@ class Stack(StackInterface):
         """Create a new Stack. `data`, if provided, must be iterable."""
         self._stack = []
 
-        if not (data is None):
+        if data is not None:
             try:
                 iter(data)
             except TypeError:
@@ -50,7 +49,7 @@ class Stack(StackInterface):
         return self._stack.pop(-1)
 
     def popn(self, number: int) -> tuple[Any, ...]:
-        """pops and returns the top `number` items of the stack, in top-to-bottom order"""
+        """pops and returns the top `number` items of the stack, in bottom-to-top order"""
         if not isinstance(number, int):
             raise self.StackError(f"`number` should be int, not {type(number).__name__}")
 
@@ -66,15 +65,14 @@ class Stack(StackInterface):
         )[::-1]
 
     def pop_all(self) -> tuple[Any, ...]:
-        """pops and returns all the items of the stack, in top-to-bottom order"""
+        """pops and returns all the items of the stack, in bottom-to-top order"""
         return self.popn(
             len(self._stack)
         )
 
     def push(self, value: Any) -> None:
         """pushes `value` onto the stack"""
-        if not (value is None):
-            self._stack.append(value)
+        self._stack.append(value)
 
     def push_all(self, values: Iterable[Any]) -> None:
         """pushes `values` onto the stack, `values` should be iterable"""
@@ -89,7 +87,7 @@ class Stack(StackInterface):
 
 class InterpreterRuntimeError(Exception):
     """
-    Custom Exception class, used when a error occurs during interpretation.
+    Custom Exception class, used when an error occurs during interpretation.
     """
 
     def __init__(self, msg: str) -> None:
@@ -98,10 +96,11 @@ class InterpreterRuntimeError(Exception):
 _builtins: dict[str, Callable]              = {}
 _sigils:   dict[str, tuple[Callable, bool]] = {}
 
-def builtin(function: Callable | None = None, *, name: str | None = None) -> Callable:
+def builtin(function: Callable | None = None, *, name: str | None = None) -> Callable[..., Any] | Callable[..., Callable[..., Any]]:
     """
-    Register a callable as a builtin function. These are called when a executable sigilblock matches the name of one the callables. A function accepts one argument: the stack.
-    Functions can return a value if they wish. If using the provided `Stack` class, `None` will be ignored
+    Register a callable as a builtin function. These are called when an executable sigil's value matches the name of one the callables.
+    A function accepts one argument: the data-structure (by default a stack).
+    Functions can return a value if they wish. `None` will be ignored, and should be pushed/added manually.
     The optional `name` parameter should be a string. It can overwrite `func.__name__`, or add that functionality
     completely.
     Can be used as a decorator, or just as a function:
@@ -111,10 +110,10 @@ def builtin(function: Callable | None = None, *, name: str | None = None) -> Cal
     @builtin(name="+")
     def add(data):...
 
-    lancallable(print, name="echo")
+    builtin(print, name="echo")
     """
 
-    def decorator(f: Callable) -> Callable:
+    def decorator(f: Callable[[DataInterface], Any]) -> Callable[[DataInterface], Any]:
         fname = name or f.__name__
 
         if not isinstance(fname, str):
@@ -134,7 +133,7 @@ def builtin(function: Callable | None = None, *, name: str | None = None) -> Cal
 
     return decorator
 
-def sigil(parser: Callable | None = None, *, sigil: str, executable: bool = False) -> Callable:
+def sigil(parser: Callable | None = None, *, sigil: str, executable: bool = False) -> Callable[..., Any] | Callable[..., Callable[..., Any]]:
     """
     Register a parser for a sigil character. `parser` should be a callable.
     These parsers are called when the corresponding `sigil` is encountered in the code.
@@ -147,16 +146,16 @@ def sigil(parser: Callable | None = None, *, sigil: str, executable: bool = Fals
     `index` is the relative index that corresponds to the last character that the parser consumes.
 
     `sigil` should be a string of length 1, that denotes the start of the block that should be parsed.
-    The ending/closing character is handled by the sigilparser.
+    The ending/closing character is handled by the sigil-parser.
 
     `executable` is used to denote whether the returned `value` from the parser should be executed (or attempted to be).
     The <.print > from earlier could be an example of when you would use it. To enable, set it to True.
     If `executable` (remains) False, the returned `value` is instead pushed to the stack.
 
-    `langsigil` can be used as both a decorator and a function:
+    `sigil` can be used as both a decorator and a function:
     # simple integer parser.
     sigil(
-       simpleparser(end=" ", cast=int),
+       simple_parser(end=" ", cast=int),
        sigil="~"
     )
 
@@ -199,8 +198,8 @@ def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Callable[[str], 
 
     Example:
     # simple integer parser.
-    langsigil(
-       simpleparser(end=" ", cast=int),
+    sigil(
+       simple_parser(end=" ", cast=int),
        sigil="~"
     )
     """
@@ -230,11 +229,11 @@ def _get_builtin(f: str) -> Callable:
 
     return _builtins[f]
 
-def run(code: str, *, stack: StackInterface | None = None) -> StackInterface:
+def run(code: str, *, data: DataInterface | None = None) -> DataInterface:
     """
     `code` is the code that should be interpreted. It should be a string.
-    `stack` is the stack object that should be used. It should support `stack.push(<value>)`.
-    If `stack` is omitted, a new stack will be created.
+    `data` is the stack object that should be used. It should support `data.push(<value>)`.
+    If `data` is omitted, a stack structure is used.
 
     For more info how the code is interpreted, see README.md.
     """
@@ -242,11 +241,11 @@ def run(code: str, *, stack: StackInterface | None = None) -> StackInterface:
     if not isinstance(code, str):
         raise TypeError(f"`code` should be a string, not {code}.")
 
-    if stack is None:
-        stack = Stack()
+    if data is None:
+        data = Stack()
 
-    if not isinstance(stack, StackInterface):
-        raise AttributeError(f"`stack` must be an instance of `StackInterface`, not {type(stack).__name__}.")
+    if not isinstance(data, DataInterface):
+        raise AttributeError(f"`stack` must be an instance of `StackInterface`, not {type(data).__name__}.")
 
     index = 0
 
@@ -275,14 +274,15 @@ def run(code: str, *, stack: StackInterface | None = None) -> StackInterface:
             if executable:
                 # if the result should be executed, do so
                 # by getting the corresponding function (if it exists)
-                # and calling it with the stack
-                stack.push(
-                    _get_builtin(parser_res)(stack)
-                )
+                # and calling it with `data`
+                # if it doesn't return None, push the value
+                res = _get_builtin(parser_res)(data)
+                if res is not None:
+                    data.push(res)
             else:
-                # otherwise push it to the stack
-                stack.push(parser_res)
+                # otherwise push it to `data`
+                data.push(parser_res)
 
         index += 1
 
-    return stack
+    return data
