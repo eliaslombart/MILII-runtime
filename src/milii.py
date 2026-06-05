@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Callable
+from typing import Any, Iterable, Callable, Protocol, runtime_checkable
 
 _builtins = {}
 _sigils = {}
@@ -7,10 +7,15 @@ class InterpreterRuntimeError(Exception):
     """
     Custom Exception class, used when a error occurs during interpretation.
     """
-    def __init__(self, msg: str):
+    def __init__(self, msg: str) -> None:
         super().__init__(msg)
 
-class Stack:
+@runtime_checkable
+class StackInterface(Protocol):
+    def push(self, value: Any) -> None:
+        ...
+
+class Stack(StackInterface):
     """
     A Stack class.
 
@@ -21,10 +26,10 @@ class Stack:
     """
     class StackError(Exception):
         """Error class used by `Stack` for stack-specific problems."""
-        def __init__(self, msg):
+        def __init__(self, msg) -> None:
             super().__init__(msg)
 
-    def __init__(self, *, data: Iterable = None):
+    def __init__(self, *, data: Iterable = None) -> None:
         """create a new `Stack` class, type of `data` is a iterable"""
         self._stack = []
     
@@ -37,24 +42,27 @@ class Stack:
             for v in data:
                 self.push(v)
 
-    def peek(self):
+    def peek(self) -> Any:
         """return the top element of the stack"""
         if len(self._stack) == 0:
             raise self.StackError("cannot peek when Stack is empty.")
 
         return self._stack[-1]
 
-    def pop(self):
+    def pop(self) -> Any:
         """pops and returns the top of the stack"""
         if len(self._stack) == 0:
             raise self.StackError("cannot pop as Stack is empty.")
 
         return self._stack.pop(-1)
 
-    def popn(self, number: int):
+    def popn(self, number: int) -> tuple[Any, ...]:
         """pops and returns the top `n` items of the stack"""
         if not isinstance(number, int):
             raise self.StackError(f"`n` should be an integer, not {type(number)}")
+
+        if number < 0:
+            raise self.StackError(f"Cannot pop a negative number from a stack. Was given: {number}.")
 
         if len(self._stack) < number:
             raise self.StackError(f"Cannot pop {number} items from a stack with {len(self._stack)} items.")
@@ -64,32 +72,32 @@ class Stack:
             for _ in range(number)
         )[::-1]
 
-    def popall(self):
+    def popall(self) -> tuple[Any, ...]:
         """pops and returns all the items of the stack"""
         return self.popn(
             len(self._stack)
         )
 
-    def push(self, v: Any):
+    def push(self, v: Any) -> None:
         """pushes the value `v` onto the stack"""
         if not (v is None):
             self._stack.append(v)
     
-    def pushall(self, v: Iterable[Any]):
+    def pushall(self, v: Iterable[Any]) -> None:
         """pushes the values `v` onto the stack, `v` should be iterable"""
         for e in v:
             self.push(e)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"<bottom {self._stack} top>"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Stack(data={self._stack!r})"
 
-def builtin(func: Callable = None, *, name: str = None):
+def builtin(function: Callable = None, *, name: str = None) -> Callable:
     """
-    Adds the callable `func` to the list of builtin functions. These are called when a executable sigilblock matches the name of one the callables. A callable accepts one argument: the stack.
-    Callables should not return anything.
+    Adds the callable `func` to the list of builtin functions. These are called when a executable sigilblock matches the name of one the callables. A function accepts one argument: the stack.
+    Functions can return a value if they wish. If using the provided `Stack` class, `None` will be ignored
     The optional `name` parameter should be a string. It can overwrite `func.__name__`, or add that functionality
     completely.
     Can be used as a decorator, or just as a function:
@@ -101,7 +109,7 @@ def builtin(func: Callable = None, *, name: str = None):
 
     lancallable(print, name="echo")
     """
-    def decorator(f):
+    def decorator(f: Callable) -> Callable:
         fname = name or f.__name__
 
         if not isinstance(fname, str):
@@ -116,12 +124,12 @@ def builtin(func: Callable = None, *, name: str = None):
         _builtins[fname] = f
         return f
 
-    if func is not None:
-        return decorator(func)
+    if function is not None:
+        return decorator(function)
 
     return decorator
 
-def sigil(parser: Callable = None, *, sigil: str, executable: bool = False):
+def sigil(parser: Callable = None, *, sigil: str, executable: bool = False) -> Callable:
     """
     Adds the sigilparser `parser` to the list of parsers. `parser` should be a callable.
     These parsers are called when the corresponding `sigil` is encountered in the code.
@@ -150,7 +158,7 @@ def sigil(parser: Callable = None, *, sigil: str, executable: bool = False):
     @sigil(sigil="\"")
     def stringparser(code):...
     """
-    def decorator(p):
+    def decorator(p: Callable) -> Callable:
         if not isinstance(sigil, str):
             raise TypeError(f"`sigil` must be a string of length 1, not a {type(sigil)}.")
         
@@ -173,13 +181,13 @@ def sigil(parser: Callable = None, *, sigil: str, executable: bool = False):
 
     return decorator
 
-def isbuiltin(function: str):
+def isbuiltin(function: str) -> bool:
     """
     Returns wether the given function name is known to be executable.
     """
-    return f in _builtins
+    return function in _builtins
 
-def simpleparser(*, end: str, cast: Callable = lambda x:x):
+def simpleparser(*, end: str, cast: Callable = lambda x:x) -> Callable[str, tuple[Any, int]]:
     """
     Very simple iterface for making a parser that ends at a character `end`.
     `cast` can be used to transform the resulting string into something usable.
@@ -201,7 +209,7 @@ def simpleparser(*, end: str, cast: Callable = lambda x:x):
     if not callable(cast):
         raise TypeError(f"`cast` must be a function/callable, not {type(cast)}.")
 
-    def parser(code):
+    def parser(code: str) -> tuple[Any, int]:
         index = 1
         buff = ""
         while index < len(code) and code[index] != end:
@@ -211,13 +219,13 @@ def simpleparser(*, end: str, cast: Callable = lambda x:x):
 
     return parser
 
-def _getbuiltin(f: str):
+def _getbuiltin(f: str) -> Callable:
     if not isbuiltin(f):
         raise InterpreterRuntimeError(f"`{f}` is not a recognized builtin function.")
     
     return _builtins[f]
 
-def run(code: str, *, stack = None):
+def run(code: str, *, stack: StackInterface = None) -> StackInterface:
     """
     `code` is the code that should be interpreted. It should be a String.
     `stack` is the stackobject that should be used. It should support `stack.push(<value>)`.
@@ -232,7 +240,7 @@ def run(code: str, *, stack = None):
     if stack is None:
         stack = Stack()
 
-    if not callable(getattr(stack, "push", None)):
+    if not isinstance(stack, StackInterface):
         raise AttributeError("It seems `stack` does not support `stack.push(value)`.")
 
     index = 0
