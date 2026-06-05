@@ -3,17 +3,21 @@ from typing import Any, Iterable, Callable, Protocol, runtime_checkable
 _builtins = {}
 _sigils = {}
 
+
 class InterpreterRuntimeError(Exception):
     """
     Custom Exception class, used when a error occurs during interpretation.
     """
+
     def __init__(self, msg: str) -> None:
         super().__init__(msg)
+
 
 @runtime_checkable
 class StackInterface(Protocol):
     def push(self, value: Any) -> None:
         ...
+
 
 class Stack(StackInterface):
     """
@@ -24,15 +28,17 @@ class Stack(StackInterface):
     Pushall pushes the first element of the iterable first, so the first element is the bottommost element.
     If a type `None` is pushed, it is ignored instead.
     """
+
     class StackError(Exception):
         """Error class used by `Stack` for stack-specific problems."""
+
         def __init__(self, msg) -> None:
             super().__init__(msg)
 
     def __init__(self, *, data: Iterable = None) -> None:
         """create a new `Stack` class, type of `data` is a iterable"""
         self._stack = []
-    
+
         if not (data is None):
             try:
                 iter(data)
@@ -82,7 +88,7 @@ class Stack(StackInterface):
         """pushes the value `v` onto the stack"""
         if not (v is None):
             self._stack.append(v)
-    
+
     def pushall(self, v: Iterable[Any]) -> None:
         """pushes the values `v` onto the stack, `v` should be iterable"""
         for e in v:
@@ -93,6 +99,7 @@ class Stack(StackInterface):
 
     def __repr__(self) -> str:
         return f"Stack(data={self._stack!r})"
+
 
 def builtin(function: Callable = None, *, name: str = None) -> Callable:
     """
@@ -109,6 +116,7 @@ def builtin(function: Callable = None, *, name: str = None) -> Callable:
 
     lancallable(print, name="echo")
     """
+
     def decorator(f: Callable) -> Callable:
         fname = name or f.__name__
 
@@ -128,6 +136,7 @@ def builtin(function: Callable = None, *, name: str = None) -> Callable:
         return decorator(function)
 
     return decorator
+
 
 def sigil(parser: Callable = None, *, sigil: str, executable: bool = False) -> Callable:
     """
@@ -158,10 +167,11 @@ def sigil(parser: Callable = None, *, sigil: str, executable: bool = False) -> C
     @sigil(sigil="\"")
     def stringparser(code):...
     """
+
     def decorator(p: Callable) -> Callable:
         if not isinstance(sigil, str):
             raise TypeError(f"`sigil` must be a string of length 1, not a {type(sigil)}.")
-        
+
         if len(sigil) != 1:
             raise ValueError(f"`sigil` must be a string of length 1, not {len(sigil)}.")
 
@@ -170,16 +180,16 @@ def sigil(parser: Callable = None, *, sigil: str, executable: bool = False) -> C
 
         if sigil in _sigils:
             raise NameError(f"`{sigil}` is already in use as a sigil.")
-        
+
         _sigils[sigil] = (p, executable)
 
         return p
-
 
     if parser is not None:
         return decorator(parser)
 
     return decorator
+
 
 def isbuiltin(function: str) -> bool:
     """
@@ -187,7 +197,8 @@ def isbuiltin(function: str) -> bool:
     """
     return function in _builtins
 
-def simpleparser(*, end: str, cast: Callable = lambda x:x) -> Callable[str, tuple[Any, int]]:
+
+def simpleparser(*, end: str, cast: Callable = lambda x: x) -> Callable[str, tuple[Any, int]]:
     """
     Very simple iterface for making a parser that ends at a character `end`.
     `cast` can be used to transform the resulting string into something usable.
@@ -202,7 +213,7 @@ def simpleparser(*, end: str, cast: Callable = lambda x:x) -> Callable[str, tupl
 
     if not isinstance(end, str):
         raise TypeError(f"`end` must be a string of length 1, not {type(end)}")
-    
+
     if len(end) != 1:
         raise ValueError(f"`end` must be of length 1, not {len(end)}")
 
@@ -219,11 +230,13 @@ def simpleparser(*, end: str, cast: Callable = lambda x:x) -> Callable[str, tupl
 
     return parser
 
+
 def _getbuiltin(f: str) -> Callable:
     if not isbuiltin(f):
         raise InterpreterRuntimeError(f"`{f}` is not a recognized builtin function.")
-    
+
     return _builtins[f]
+
 
 def run(code: str, *, stack: StackInterface = None) -> StackInterface:
     """
@@ -258,12 +271,14 @@ def run(code: str, *, stack: StackInterface = None) -> StackInterface:
             parser_res, index_offset = parser(code[index:])
 
             if not isinstance(index_offset, int):
-                raise InterpreterRuntimeError(f"Parser returned ({type(parser_res)}, {type(index_offset)}), expected: (Any, int).")
+                raise InterpreterRuntimeError(
+                    f"Parser returned ({type(parser_res)}, {type(index_offset)}), expected: (Any, int).")
 
             index += index_offset
 
             if index < -1:
-                raise InterpreterRuntimeError(f"Parser returned {index_offset} as its index-offset, which caused the file pointer to be {index}, which is an illigal state.")
+                raise InterpreterRuntimeError(
+                    f"Parser returned {index_offset} as its index-offset, which caused the file pointer to be {index}, which is an illigal state.")
 
             if executable:
                 # if the result should be executed, do so
@@ -275,7 +290,7 @@ def run(code: str, *, stack: StackInterface = None) -> StackInterface:
             else:
                 # otherwise push it to the stack
                 stack.push(parser_res)
-        
+
         index += 1
 
     return stack
