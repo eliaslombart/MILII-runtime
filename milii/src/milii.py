@@ -26,9 +26,7 @@ class Stack(DataInterface):
         self._stack = []
 
         if data is not None:
-            try:
-                iter(data)
-            except TypeError:
+            if not isinstance(data, Iterable):
                 raise TypeError(f"`data` should be Iterable, not {type(data).__name__}.")
 
             for v in data:
@@ -37,7 +35,7 @@ class Stack(DataInterface):
     def peek(self) -> Any:
         """return the top element of the stack"""
         if len(self._stack) == 0:
-            raise self.StackError("cannot peek when Stack is empty.")
+            raise ValueError("cannot peek when Stack is empty.")
 
         return self._stack[-1]
 
@@ -51,10 +49,10 @@ class Stack(DataInterface):
     def popn(self, number: int) -> tuple[Any, ...]:
         """pops and returns the top `number` items of the stack, in bottom-to-top order"""
         if not isinstance(number, int):
-            raise self.StackError(f"`number` should be int, not {type(number).__name__}")
+            raise TypeError(f"`number` should be int, not {type(number).__name__}")
 
         if number < 0:
-            raise self.StackError(f"cannot pop a negative number from a stack. Was given: {number}.")
+            raise ValueError(f"cannot pop a negative number of items from a stack. Was given: {number}.")
 
         if len(self._stack) < number:
             raise self.StackError(f"cannot pop {number} items from a stack with {len(self._stack)} items.")
@@ -245,7 +243,7 @@ def run(code: str, *, data: DataInterface | None = None) -> DataInterface:
         data = Stack()
 
     if not isinstance(data, DataInterface):
-        raise AttributeError(f"`stack` must be an instance of `StackInterface`, not {type(data).__name__}.")
+        raise TypeError(f"`stack` must be an instance of `StackInterface`, not {type(data).__name__}.")
 
     index = 0
 
