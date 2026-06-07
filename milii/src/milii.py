@@ -1,10 +1,13 @@
 from typing import Any, Iterable, Callable, Protocol, runtime_checkable
 
+
 @runtime_checkable
 class DataInterface(Protocol):
     """Protocol for objects that can receive values via `.push()`."""
+
     def push(self, value: Any) -> None:
         ...
+
 
 class Stack(DataInterface):
     """
@@ -86,6 +89,7 @@ class Stack(DataInterface):
     def __len__(self):
         return len(self._stack)
 
+
 class InterpreterRuntimeError(Exception):
     """
     Custom Exception class, used when an error occurs during interpretation.
@@ -93,6 +97,7 @@ class InterpreterRuntimeError(Exception):
 
     def __init__(self, msg: str) -> None:
         super().__init__(msg)
+
 
 def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Callable[[str], tuple[Any, int]]:
     """
@@ -126,6 +131,7 @@ def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Callable[[str], 
 
     return parser
 
+
 class MiliiRuntime:
     """
     A class that represents a MILII runtime. Each instance have their own sigils and builtins.
@@ -155,10 +161,11 @@ class MiliiRuntime:
             super().__init__(message)
 
     def __init__(self):
-        self._builtins: dict[str, Callable]              = {}
-        self._sigils:   dict[str, tuple[Callable, bool]] = {}
+        self._builtins: dict[str, Callable] = {}
+        self._sigils: dict[str, tuple[Callable, bool]] = {}
 
-    def builtin(self, function: Callable | None = None, *, name: str | None = None) -> Callable[..., Any] | Callable[..., Callable[..., Any]]:
+    def builtin(self, function: Callable | None = None, *, name: str | None = None) -> Callable[..., Any] | Callable[
+        ..., Callable[..., Any]]:
         """
         Register a callable as a builtin function. These are called when an executable sigil's value matches the name of one the callables.
         A function accepts one argument: the data-structure (by default a stack).
@@ -195,7 +202,9 @@ class MiliiRuntime:
 
         return decorator
 
-    def sigil(self, parser: Callable | None = None, *, sigil: str, executable: bool = False) -> Callable[..., Any] | Callable[..., Callable[..., Any]]:
+    def sigil(self, parser: Callable | None = None, *, sigil: str, executable: bool = False) -> Callable[..., Any] | \
+                                                                                                Callable[..., Callable[
+                                                                                                    ..., Any]]:
         """
         Register a parser for a sigil character. `parser` should be a callable.
         These parsers are called when the corresponding `sigil` is encountered in the code.
@@ -253,11 +262,10 @@ class MiliiRuntime:
         """
         return function in self._builtins
 
-
-    def _get_builtin(self, f: str) -> Callable:
+    def _get_builtin(self, f: str, *,
+                     error_handler: Callable[[str], Any] = lambda msg: InterpreterRuntimeError(msg)) -> Callable:
         if not self.is_builtin(f):
-            raise InterpreterRuntimeError(
-                f"`{f}` is not a recognized builtin function.",)
+            raise error_handler(f"`{f}` is not a recognized builtin function.")
 
         return self._builtins[f]
 
@@ -300,8 +308,6 @@ class MiliiRuntime:
                         index
                     )
 
-                index += index_offset
-
                 if index < -1:
                     raise self.InterpreterRuntimeError(
                         f"parser returned {index_offset} as its index-offset, which caused the file pointer to be {index}, which is an illegal state.",
@@ -314,12 +320,16 @@ class MiliiRuntime:
                     # by getting the corresponding function (if it exists)
                     # and calling it with `data`
                     # if it doesn't return None, push the value
-                    res = self._get_builtin(parser_res)(data)
+                    error_handler = lambda msg: self.InterpreterRuntimeError(msg, code, index)
+
+                    res = self._get_builtin(parser_res, error_handler=error_handler)(data)
                     if res is not None:
                         data.push(res)
                 else:
                     # otherwise push it to `data`
                     data.push(parser_res)
+
+                index += index_offset
 
             index += 1
 
