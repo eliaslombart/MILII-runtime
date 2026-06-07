@@ -57,7 +57,7 @@ class Stack(DataInterface):
         if len(self._stack) == 0:
             raise self.StackError("cannot pop as Stack is empty.")
 
-        return self._stack.pop()
+        return self._stack.pop(-1)
 
     def popn(self, number: int) -> tuple[Any, ...]:
         """pops and returns the top `number` items of the stack, in bottom-to-top order"""
@@ -294,7 +294,6 @@ class MiliiRuntime:
         index = 0
 
         while index < len(code):
-
             # if the current character is a known sigil
             if code[index] in self._sigils:
 
@@ -337,8 +336,6 @@ class MiliiRuntime:
                 else:
                     # otherwise push it to `data`
                     data.push(parser_res)
-
-                index += index_offset
 
             index += 1
 
