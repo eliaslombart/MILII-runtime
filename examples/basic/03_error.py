@@ -5,10 +5,10 @@ from milii import *
 
 runtime = MiliiRuntime()
 
-#runtime.sigil(
-#    lambda _: (-50, ""),
-#    sigil="."
-#)
+runtime.sigil(
+    lambda _:  (-50, ""),
+    sigil="."
+)
 
 runtime.sigil(
     simple_parser(end=" "),
@@ -17,5 +17,5 @@ runtime.sigil(
 )
 
 runtime.run(
-    ":bskrygihniuhfufdghvdbv .hi %bkufewnfdbksjbvvvo"
+    ":verylongsequenceofcharacters .hi %anotherverylongsequenceofcharactersonlythistimeactuallyrelevant"
 )
