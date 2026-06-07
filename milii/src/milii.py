@@ -1,6 +1,5 @@
 from typing import Any, Iterable, Callable, Protocol, runtime_checkable
 
-
 @runtime_checkable
 class DataInterface(Protocol):
     """Protocol for objects that can receive values via `.push()`."""
@@ -8,6 +7,13 @@ class DataInterface(Protocol):
     def push(self, value: Any) -> None:
         ...
 
+class InterpreterRuntimeError(Exception):
+    """
+    Exception class for the user, used when an error occurs during interpretation.
+    """
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(msg)
 
 class Stack(DataInterface):
     """
@@ -18,7 +24,7 @@ class Stack(DataInterface):
     `push_all` pushes the first element of the iterable first, so the first element is the bottommost element.
     """
 
-    class StackError(Exception):
+    class StackError(IndexError):
         """Error class used by `Stack` for stack-specific problems."""
 
         def __init__(self, msg: str) -> None:
@@ -89,14 +95,8 @@ class Stack(DataInterface):
     def __len__(self):
         return len(self._stack)
 
-
-class InterpreterRuntimeError(Exception):
-    """
-    Custom Exception class, used when an error occurs during interpretation.
-    """
-
-    def __init__(self, msg: str) -> None:
-        super().__init__(msg)
+    def __bool__(self):
+        return bool(self._stack)
 
 
 def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Callable[[str], tuple[Any, int]]:
@@ -213,8 +213,11 @@ class MiliiRuntime:
         When the sigil '"' is encountered, the 'stringparser' is called with: <"Hello World!" .print >
         But when after that the sigil "." is encountered, its corresponding parser is called with <.print >
 
-        The parser Should return a tuple: (value, index), where `value` is the value that is pushed to the stack.
-        `index` is the relative index that corresponds to the last character that the parser consumes.
+        The parser Should return a tuple: (value, index-offset), where `value` is the value that is pushed to the stack.
+        `index-offset` is the relative index that corresponds to the last character that the parser consumes.
+        For example:
+        <"Hello world!"123> here a stringparser would last consume the second quotation mark, so it would return its index (in the string the parser received).
+        The runtime would then resume on the '1'-character.
 
         `sigil` should be a string of length 1, that denotes the start of the block that should be parsed.
         The ending/closing character is handled by the sigil-parser.
@@ -308,7 +311,10 @@ class MiliiRuntime:
                         index
                     )
 
-                if index < -1:
+                # this is not a bug, as the index will later be incremented by one, so
+                # parsers can at most bring the pointer back to index 0. This is allowed as
+                # this allows loops to exist (crude loops, but I digress)
+                if index + 1 < index_offset:
                     raise self.InterpreterRuntimeError(
                         f"parser returned {index_offset} as its index-offset, which caused the file pointer to be {index}, which is an illegal state.",
                         code,
