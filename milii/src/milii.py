@@ -7,7 +7,11 @@ class DataInterface(Protocol):
     def push(self, value: Any) -> None:
         ...
 
-class InterpreterRuntimeError(Exception):
+Builtin = Callable[[DataInterface], Any]
+Parser = Callable[[str], tuple[Any, int]]
+
+
+class UserRuntimeError(Exception):
     """
     Exception class for the user, used when an error occurs during interpretation.
     """
@@ -53,7 +57,7 @@ class Stack(DataInterface):
         if len(self._stack) == 0:
             raise self.StackError("cannot pop as Stack is empty.")
 
-        return self._stack.pop(-1)
+        return self._stack.pop()
 
     def popn(self, number: int) -> tuple[Any, ...]:
         """pops and returns the top `number` items of the stack, in bottom-to-top order"""
@@ -67,7 +71,7 @@ class Stack(DataInterface):
             raise self.StackError(f"cannot pop {number} items from a stack with {len(self._stack)} items.")
 
         return tuple(
-            self._stack.pop(-1)
+            self._stack.pop()
             for _ in range(number)
         )[::-1]
 
@@ -99,7 +103,7 @@ class Stack(DataInterface):
         return bool(self._stack)
 
 
-def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Callable[[str], tuple[Any, int]]:
+def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Parser:
     """
     Very simple interface for making a parser that ends at a character `end`.
     `cast` is applied to the parsed substring before it is returned.
@@ -123,11 +127,11 @@ def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Callable[[str], 
 
     def parser(code: str) -> tuple[Any, int]:
         index = 1
-        buff = ""
+        buffer = []
         while index < len(code) and code[index] != end:
-            buff += code[index]
+            buffer.append(code[index])
             index += 1
-        return cast(buff), index
+        return cast("".join(buffer)), index
 
     return parser
 
@@ -161,11 +165,10 @@ class MiliiRuntime:
             super().__init__(message)
 
     def __init__(self):
-        self._builtins: dict[str, Callable] = {}
-        self._sigils: dict[str, tuple[Callable, bool]] = {}
+        self._builtins: dict[str, Builtin] = {}
+        self._sigils:   dict[str, tuple[Parser, bool]]  = {}
 
-    def builtin(self, function: Callable | None = None, *, name: str | None = None) -> Callable[..., Any] | Callable[
-        ..., Callable[..., Any]]:
+    def builtin(self, function: Builtin | None = None, *, name: str | None = None) -> Callable[[Builtin], Builtin] | Builtin:
         """
         Register a callable as a builtin function. These are called when an executable sigil's value matches the name of one the callables.
         A function accepts one argument: the data-structure (by default a stack).
@@ -182,7 +185,7 @@ class MiliiRuntime:
         builtin(print, name="echo")
         """
 
-        def decorator(f: Callable[[DataInterface], Any]) -> Callable[[DataInterface], Any]:
+        def decorator(f: Builtin) -> Builtin:
             fname = name or f.__name__
 
             if not isinstance(fname, str):
@@ -202,9 +205,7 @@ class MiliiRuntime:
 
         return decorator
 
-    def sigil(self, parser: Callable | None = None, *, sigil: str, executable: bool = False) -> Callable[..., Any] | \
-                                                                                                Callable[..., Callable[
-                                                                                                    ..., Any]]:
+    def sigil(self, parser: Parser | None = None, *, sigil: str, executable: bool = False) -> Callable[[Parser], Parser] | Parser:
         """
         Register a parser for a sigil character. `parser` should be a callable.
         These parsers are called when the corresponding `sigil` is encountered in the code.
@@ -237,7 +238,7 @@ class MiliiRuntime:
         def stringparser(code):...
         """
 
-        def decorator(p: Callable) -> Callable:
+        def decorator(p: Parser) -> Parser:
             if not isinstance(sigil, str):
                 raise TypeError(f"`sigil` must be a string of length 1, not a {type(sigil).__name__}.")
 
@@ -266,7 +267,7 @@ class MiliiRuntime:
         return function in self._builtins
 
     def _get_builtin(self, f: str, *,
-                     error_handler: Callable[[str], Any] = lambda msg: InterpreterRuntimeError(msg)) -> Callable:
+                     error_handler: Callable[[str], Any] = lambda msg: UserRuntimeError(msg)) -> Builtin:
         if not self.is_builtin(f):
             raise error_handler(f"`{f}` is not a recognized builtin function.")
 
@@ -311,10 +312,12 @@ class MiliiRuntime:
                         index
                     )
 
+                index += index_offset
+
                 # this is not a bug, as the index will later be incremented by one, so
                 # parsers can at most bring the pointer back to index 0. This is allowed as
                 # this allows loops to exist (crude loops, but I digress)
-                if index + 1 < index_offset:
+                if index < -1:
                     raise self.InterpreterRuntimeError(
                         f"parser returned {index_offset} as its index-offset, which caused the file pointer to be {index}, which is an illegal state.",
                         code,
@@ -326,7 +329,7 @@ class MiliiRuntime:
                     # by getting the corresponding function (if it exists)
                     # and calling it with `data`
                     # if it doesn't return None, push the value
-                    error_handler = lambda msg: self.InterpreterRuntimeError(msg, code, index)
+                    error_handler = lambda msg: self.InterpreterRuntimeError(msg, code, index - index_offset)
 
                     res = self._get_builtin(parser_res, error_handler=error_handler)(data)
                     if res is not None:
