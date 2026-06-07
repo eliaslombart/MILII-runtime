@@ -2,7 +2,7 @@ from typing import Any, Iterable, Callable, Protocol, runtime_checkable
 
 @runtime_checkable
 class DataInterface(Protocol):
-    """    Protocol for objects that can receive values via `.push()`."""
+    """Protocol for objects that can receive values via `.push()`."""
     def push(self, value: Any) -> None:
         ...
 
