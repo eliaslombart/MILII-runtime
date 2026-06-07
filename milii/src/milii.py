@@ -18,7 +18,7 @@ class Stack(DataInterface):
     class StackError(Exception):
         """Error class used by `Stack` for stack-specific problems."""
 
-        def __init__(self, msg) -> None:
+        def __init__(self, msg: str) -> None:
             super().__init__(msg)
 
     def __init__(self, *, data: Iterable[Any] | None = None) -> None:
@@ -35,7 +35,7 @@ class Stack(DataInterface):
     def peek(self) -> Any:
         """return the top element of the stack"""
         if len(self._stack) == 0:
-            raise ValueError("cannot peek when Stack is empty.")
+            raise self.StackError("cannot peek when Stack is empty.")
 
         return self._stack[-1]
 
@@ -82,6 +82,9 @@ class Stack(DataInterface):
 
     def __repr__(self) -> str:
         return f"Stack(data={self._stack!r})"
+
+    def __len__(self):
+        return len(self._stack)
 
 class InterpreterRuntimeError(Exception):
     """
