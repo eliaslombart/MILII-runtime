@@ -124,6 +124,33 @@ def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Callable[[str], 
     return parser
 
 class MiliiRuntime:
+    """
+    A class that represents a MILII runtime. Each instance have their own sigils and builtins.
+    Each `run`-function call has their own has their own stack, unless otherwise specified (see the documentation of the `run` function).
+    """
+
+    class InterpreterRuntimeError(Exception):
+        """
+        An error class used by the interpreter that also gives context. Cannot be used externally. (except by parsers)
+        Requires the entire codebase as well as the current position within that codebase to work.
+        """
+
+        _CODE_SNIPPET_WIDTH = 15
+
+        def __init__(self, msg: str, code: str, index: int) -> None:
+            front_offset = max(0, index - self._CODE_SNIPPET_WIDTH)
+            end_offset = min(len(code), index + self._CODE_SNIPPET_WIDTH)
+            arrow_padding = index - front_offset
+
+            snippet = code[front_offset:end_offset]
+
+            # not the prettiest string to ever exist, but it does the job
+            message = msg + fr""" at position {index}:
+            {snippet}
+            """ + " " * arrow_padding + "^"
+
+            super().__init__(message)
+
     def __init__(self):
         self._builtins: dict[str, Callable]              = {}
         self._sigils:   dict[str, tuple[Callable, bool]] = {}
@@ -226,7 +253,8 @@ class MiliiRuntime:
 
     def _get_builtin(self, f: str) -> Callable:
         if not self.is_builtin(f):
-            raise InterpreterRuntimeError(f"`{f}` is not a recognized builtin function.")
+            raise InterpreterRuntimeError(
+                f"`{f}` is not a recognized builtin function.",)
 
         return self._builtins[f]
 
@@ -263,14 +291,20 @@ class MiliiRuntime:
                 parser_res, index_offset = parser(code[index:])
 
                 if not isinstance(index_offset, int):
-                    raise InterpreterRuntimeError(
-                        f"parser returned ({type(parser_res).__name__}, {type(index_offset).__name__}), expected: (Any, int).")
+                    raise self.InterpreterRuntimeError(
+                        f"parser returned ({type(parser_res).__name__}, {type(index_offset).__name__}), expected: (Any, int).",
+                        code,
+                        index
+                    )
 
                 index += index_offset
 
                 if index < -1:
-                    raise InterpreterRuntimeError(
-                        f"parser returned {index_offset} as its index-offset, which caused the file pointer to be {index}, which is an illegal state.")
+                    raise self.InterpreterRuntimeError(
+                        f"parser returned {index_offset} as its index-offset, which caused the file pointer to be {index}, which is an illegal state.",
+                        code,
+                        index
+                    )
 
                 if executable:
                     # if the result should be executed, do so
