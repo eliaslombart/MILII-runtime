@@ -1,17 +1,19 @@
 from milii import *
 
-sigil(
+runtime = MiliiRuntime()
+
+runtime.sigil(
     simple_parser(end=" ", cast=int),
     sigil="$"
 )
 
-sigil(
+runtime.sigil(
     simple_parser(end=" "),
     sigil=".",
     executable=True
 )
 
-@sigil(sigil='"')
+@runtime.sigil(sigil='"')
 def string_parser(code):
     index = 1
     buffer = ""
@@ -32,15 +34,15 @@ def string_parser(code):
 
     return buffer, index
 
-@builtin
+@runtime.builtin
 def echo(stack):
     print(stack.pop())
 
-@builtin
+@runtime.builtin
 def add(stack):
     a, b = stack.popn(2)
     return a + b
 
-run(
+runtime.run(
     '$4 $5 .add .echo "Hello " "World!" .add .echo'
 )

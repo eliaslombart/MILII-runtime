@@ -1,5 +1,7 @@
 from milii import *
 
+runtime = MiliiRuntime()
+
 # used for saving variables
 variables = {}
 
@@ -13,32 +15,32 @@ class GetVar:
         self.value = value
 
 # int parser
-sigil(
+runtime.sigil(
     simple_parser(end=" ", cast=int),
     sigil="%"
 )
 
 # executables
-sigil(
+runtime.sigil(
     simple_parser(end=" "),
     sigil=".",
     executable=True
 )
 
 # definitions
-sigil(
+runtime.sigil(
     simple_parser(end=">", cast=Variable),
     sigil="<"
 )
 
 # getting the value of a variable
-sigil(
+runtime.sigil(
     simple_parser(end=" ", cast=GetVar),
     sigil="$"
 )
 
 # command that assigns a value to a variable
-@builtin
+@runtime.builtin
 def let(stack):
     val, name = stack.popn(2)
 
@@ -51,7 +53,7 @@ def let(stack):
     variables[name.value] = val
 
 # prints a value, which might be a variable
-@builtin
+@runtime.builtin
 def echo(stack):
     val = stack.pop()
 
@@ -60,6 +62,6 @@ def echo(stack):
 
     print(val)
 
-run(
+runtime.run(
     "%5 .echo %6 <int> .let $int .echo"
 )

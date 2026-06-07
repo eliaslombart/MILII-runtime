@@ -1,50 +1,52 @@
 from milii import *
 
-sigil(
+runtime = MiliiRuntime()
+
+runtime.sigil(
     simple_parser(end=" ", cast=int),
     sigil="$"
 )
 
-sigil(
+runtime.sigil(
     simple_parser(end=" "),
     sigil=".",
     executable=True
 )
 
-@builtin(name="+")
+@runtime.builtin(name="+")
 def add(s: Stack):
     a, b = s.popn(2)
     return a + b
 
-@builtin(name="-")
+@runtime.builtin(name="-")
 def sub(s: Stack):
     a, b = s.popn(2)
     return a - b
 
-@builtin(name="*")
+@runtime.builtin(name="*")
 def mul(s: Stack):
     a, b = s.popn(2)
     return a * b
 
-@builtin(name="/")
+@runtime.builtin(name="/")
 def div(s: Stack):
     a, b = s.popn(2)
     return a / b
 
-@builtin(name="%")
+@runtime.builtin(name="%")
 def mod(s: Stack):
     a, b = s.popn(2)
     return a % b
 
-@builtin(name="**")
+@runtime.builtin(name="**")
 def power(s: Stack):
     a, b = s.popn(2)
     return a ** b
 
-@builtin(name="print")
+@runtime.builtin(name="print")
 def echo(s: Stack):
     print(s.pop())
 
-run(
+runtime.run(
     "$2 $3 .- .print"
 )

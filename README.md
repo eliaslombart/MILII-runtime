@@ -11,21 +11,24 @@ Parsing is delegated to user-defined sigils that can be registered before or dur
 ```python
 from milii import *
 
+# define a milii runtime
+runtime = MiliiRuntime()
+
 # integer parser
-sigil(
+runtime.sigil(
     simple_parser(end=" ", cast=int),
     sigil="%"
 )
 
 # command parser
-sigil(
+runtime.sigil(
     simple_parser(end=" "),
     sigil=".",
     executable=True
 )
 
 # string parser
-@sigil(sigil='"')
+@runtime.sigil(sigil='"')
 def stringparser(code):
     index = 1
     buffer = ""
@@ -45,25 +48,25 @@ def stringparser(code):
 
     return buffer, index + 1
 
-sigil(
+runtime.sigil(
     stringparser,
     sigil="'"
 )
 
 # add function
-@builtin()
+@runtime.builtin()
 def add(data):
     a, b = data.popn(2)
     return a + b
 
 # print function
-builtin(
+runtime.builtin(
     lambda data: print(data.pop()),
     name="echo"
 )
 
 # run
-run(
+runtime.run(
     '%1 %2 .add .echo "Hello " \'world!"\' .add .echo'
 )
 ```
@@ -80,6 +83,6 @@ Fully-fledged examples can be found in the `examples` directory.
 
 ## Technical overview
 
-MILII is explained as a sigil-based language, although it can be argued to be a circumfix-based one. The reason for this architecture is that this avoids a tokennizing step. Instead, the parser can read character by character until it reaches a known sigil, at which point it dispatches the corresponding subparser. After the subparser is done, the main parser resumes where the subparser left off.
-The user can define new sigils and functions (called builtins) before and during runtime, both are global, as there is no local-scope.
+MILII is explained as a sigil-based language, although it can be argued to be a circumfix-based one. The reason for this architecture is that this avoids a tokenizing step. Instead, the parser can read character by character until it reaches a known sigil, at which point it dispatches the corresponding subparser. After the subparser is done, the main parser resumes where the subparser left off.
+The user can define new sigils and functions (called builtins) before and during runtime. Several scopes are possible by using several MiliiRuntime instances.
 A sigil can be marked as `executable`, which effectively communicates to the parser that it should at least attempt to execute the returned value as a command.

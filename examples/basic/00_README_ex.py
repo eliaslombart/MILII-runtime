@@ -1,20 +1,23 @@
 from milii import *
 
+# define a milii runtime
+runtime = MiliiRuntime()
+
 # integer parser
-sigil(
+runtime.sigil(
     simple_parser(end=" ", cast=int),
     sigil="%"
 )
 
 # command parser
-sigil(
+runtime.sigil(
     simple_parser(end=" "),
     sigil=".",
     executable=True
 )
 
 # string parser
-@sigil(sigil='"')
+@runtime.sigil(sigil='"')
 def stringparser(code):
     index = 1
     buffer = ""
@@ -34,24 +37,24 @@ def stringparser(code):
 
     return buffer, index + 1
 
-sigil(
+runtime.sigil(
     stringparser,
     sigil="'"
 )
 
 # add function
-@builtin()
+@runtime.builtin()
 def add(data):
     a, b = data.popn(2)
     return a + b
 
 # print function
-builtin(
+runtime.builtin(
     lambda data: print(data.pop()),
     name="echo"
 )
 
 # run
-run(
+runtime.run(
     '%1 %2 .add .echo "Hello " \'world!"\' .add .echo'
 )
