@@ -10,11 +10,8 @@ class DataInterface(Protocol):
 Builtin = Callable[[DataInterface], Any]
 Parser = Callable[[str], tuple[Any, int]]
 
-
 class UserRuntimeError(Exception):
-    """
-    Exception class for the user, used when an error occurs during interpretation.
-    """
+    """Exception class for the user, used when an error occurs during interpretation."""
 
     def __init__(self, msg: str) -> None:
         super().__init__(msg)
@@ -70,10 +67,9 @@ class Stack(DataInterface):
         if len(self._stack) < number:
             raise self.StackError(f"cannot pop {number} items from a stack with {len(self._stack)} items.")
 
-        return tuple(
-            self._stack.pop()
-            for _ in range(number)
-        )[::-1]
+        ret = self._stack[-number:]
+        del self._stack[-number:]
+        return tuple(ret)
 
     def pop_all(self) -> tuple[Any, ...]:
         """pops and returns all the items of the stack, in bottom-to-top order"""
@@ -134,7 +130,6 @@ def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Parser:
         return cast("".join(buffer)), index
 
     return parser
-
 
 class MiliiRuntime:
     """
@@ -289,7 +284,7 @@ class MiliiRuntime:
             data = Stack()
 
         if not isinstance(data, DataInterface):
-            raise TypeError(f"`stack` must be an instance of `StackInterface`, not {type(data).__name__}.")
+            raise TypeError(f"`stack` must be an instance of `DataInterface`, not {type(data).__name__}.")
 
         index = 0
 
