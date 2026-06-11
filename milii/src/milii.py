@@ -67,6 +67,10 @@ class Stack(DataInterface):
         if len(self._stack) < number:
             raise self.StackError(f"cannot pop {number} items from a stack with {len(self._stack)} items.")
 
+        if number == 0:
+            # otherwise the entire stack is returned, and it's also not an invalid value per se
+            return tuple()
+
         ret = self._stack[-number:]
         del self._stack[-number:]
         return tuple(ret)
@@ -92,19 +96,19 @@ class Stack(DataInterface):
     def __repr__(self) -> str:
         return f"Stack(data={self._stack!r})"
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._stack)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self._stack)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return isinstance(other, Stack) and len(self) == len(other) and all(
             a == b
             for a, b in zip(self._stack, other._stack)
         )
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return not (self == other)
 
 def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Parser:
