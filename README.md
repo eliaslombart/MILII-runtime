@@ -83,6 +83,6 @@ Fully-fledged examples can be found in the `examples` directory.
 
 ## Technical overview
 
-MILII is explained as a sigil-based language, although it can be argued to be a circumfix-based one. The reason for this architecture is that this avoids a tokenizing step. Instead, the parser can read character by character until it reaches a known sigil, at which point it dispatches the corresponding subparser. After the subparser is done, the main parser resumes where the subparser left off.
+MILII is best explained as a sigil-based language, although it can be argued to be a circumfix-based one. The reason for this architecture is that this avoids a tokenizing step. Instead, the parser can read character by character until it reaches a known sigil, at which point it dispatches the corresponding subparser. After the subparser is done, the main parser resumes where the subparser left off.
 The user can define new sigils and functions (called builtins) before and during runtime. Several scopes are possible by using several MiliiRuntime instances.
 A sigil can be marked as `executable`, which effectively communicates to the parser that it should at least attempt to execute the returned value as a command.
