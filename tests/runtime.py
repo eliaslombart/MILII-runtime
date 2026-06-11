@@ -1,9 +1,9 @@
 from milii import *
 from tests import *
 
-test = TestEnv()
+tests = TestEnv()
 
-@test.add
+@tests.add
 def test_builtin():
     rt = MiliiRuntime()
 
@@ -18,7 +18,7 @@ def test_builtin():
 
     assert rt.is_builtin("test")
 
-@test.add
+@tests.add
 def test_sigil():
     rt = MiliiRuntime()
 
@@ -32,10 +32,53 @@ def test_sigil():
     else:
         raise AssertionError()
 
-# not creative enough for tests for Milii.run and simple_parser
+@tests.add
+def test_simple_parser():
+    parser = simple_parser(end=" ")
+
+    # since parsers are supposed to be sigil-based, the '%' is skipped by simple parser
+    # simple-parser does not raise an error here as the `end`-parameter is more of a seperator that
+    # a hard ending
+    assert parser("%Hello!") == ("Hello!", 7)
+    assert parser("%Hello %World!") == ("Hello", 6)
+
+    try: simple_parser(end=0)
+    except TypeError: ...
+    else: raise AssertionError()
+
+    try: simple_parser(end="  ")
+    except ValueError: ...
+    else: raise AssertionError()
+
+    try: simple_parser(end="")
+    except ValueError: ...
+    else: raise AssertionError()
+
+    try: simple_parser(end=" ", cast="")
+    except TypeError: ...
+    else: raise AssertionError()
+
+@tests.add
+def test_runtime():
+    # short test, could probably do with some checking of faulty parameters (but it should be fine)
+
+    rt = MiliiRuntime()
+
+    rt.sigil(
+        simple_parser(end=" "),
+        sigil=".",
+        executable=True
+    )
+
+    @rt.builtin(name="test")
+    def test(_): return 25
+
+    assert rt.run(".test ").pop() == 25
 
 if __name__ == "__main__":
-    test.activate(test_builtin)
-    test.activate(test_sigil)
+    tests.activate(test_builtin)
+    tests.activate(test_sigil)
+    tests.activate(test_simple_parser)
+    tests.activate(test_runtime)
 
-    test.run_tests()
+    tests.run_tests()
