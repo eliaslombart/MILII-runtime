@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "milii"
+version = "0.1.0"
+description = "Minimal interpreted language infrastructure"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+
+authors = [
+    { name = "Elias Lombart" }
+]
+
+keywords = [
+    "interpreter",
+    "dsl",
+    "language",
+    "parser",
+    "toy-language"
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Development Status :: 3 - Alpha",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

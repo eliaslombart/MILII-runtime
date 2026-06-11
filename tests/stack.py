@@ -1,4 +1,4 @@
-from milii import Stack
+from runtime import Stack
 from tests import TestEnv
 
 benchmark = TestEnv(
