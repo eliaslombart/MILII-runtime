@@ -1,7 +1,15 @@
-from typing import Callable
+from typing import Callable, Any
 from time import time
 
 Test = Callable[[], None]
+
+def assert_error(function: Callable[[Any, ...], Any], args: tuple[Any], err: type[Exception] = Exception) -> None:
+    try:
+        function(*args)
+    except err:
+        return
+
+    raise AssertionError()
 
 class TestFunction:
     def __init__(self, *, function: Test, active: bool, repeat: int) -> None:
