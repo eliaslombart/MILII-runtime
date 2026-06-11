@@ -76,8 +76,12 @@ runtime.run(
 
 ## Installation & more examples
 
-To install, simply clone the repository, move `milii.py` to your project and import it.
+To install the latest version:
+```bash
+pip install git+https://github.com/eliaslombart/MILII-runtime.git
+```
 
+If you want the entire source code/run some examples, you can clone the repository:
 ```shell
 git clone https://github.com/eliaslombart/MILII-runtime.git
 ```
