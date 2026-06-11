@@ -98,6 +98,17 @@ class Stack(DataInterface):
     def __bool__(self):
         return bool(self._stack)
 
+    def __eq__(self, other):
+        if not isinstance(other, Stack):
+            raise TypeError(f"`other` must be a Stack, not {type(other).__name__}")
+
+        return len(self) == len(other) and all(
+            a == b
+            for a, b in zip(self._stack, other._stack)
+        )
+
+    def __ne__(self, other):
+        return not (self == other)
 
 def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Parser:
     """
