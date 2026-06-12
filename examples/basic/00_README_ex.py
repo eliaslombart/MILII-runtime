@@ -24,7 +24,7 @@ def stringparser(code):
     while index < len(code):
         char = code[index]
 
-        if char in '"\'':
+        if char == code[0]:
             break
 
         if char == "\\" and index < len(code) -1:
