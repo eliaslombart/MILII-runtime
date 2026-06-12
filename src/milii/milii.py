@@ -236,6 +236,8 @@ class MiliiRuntime:
         <"Hello world!"123> here a stringparser would last consume the second quotation mark, so it would return its index (in the string the parser received).
         The runtime would then resume on the '1'-character.
 
+        If the returned `value` is None, it will be ignored instead, and not modify the data.
+
         `sigil` should be a string of length 1, that denotes the start of the block that should be parsed.
         The ending/closing character is handled by the sigil-parser.
 
