@@ -1,4 +1,4 @@
-from runtime import *
+from milii import *
 from tests import *
 
 tests = TestEnv()

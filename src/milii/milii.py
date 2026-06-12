@@ -312,7 +312,6 @@ class MiliiRuntime:
         while index < len(code):
             # if the current character is a known sigil
             if code[index] in self._sigils:
-
                 # get the corresponding parser of the sigil and whether its result should be taken as
                 # a function call
                 parser, executable = self._sigils[code[index]]
