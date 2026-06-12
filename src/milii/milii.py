@@ -159,6 +159,8 @@ class MiliiRuntime:
     """
     A class that represents a MILII runtime. Each instance have their own sigils and builtins.
     Each `run`-function call has their own has their own stack, unless otherwise specified (see the documentation of the `run` function).
+
+    A runtime may receive another runtime as a parameter during initialization, from which it will inherit the builtins and sigils.
     """
 
     class InterpreterRuntimeError(Exception):
