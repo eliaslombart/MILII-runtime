@@ -43,7 +43,7 @@ runtime.sigil(
 )
 
 # add function
-@runtime.builtin()
+@runtime.builtin
 def add(data):
     a, b = data.popn(2)
     return a + b
