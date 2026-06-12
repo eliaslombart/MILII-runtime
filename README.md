@@ -31,7 +31,7 @@ runtime.sigil(
 @runtime.sigil(sigil='"')
 def stringparser(code):
     index = 1
-    buffer = ""
+    buffer = []
     while index < len(code):
         char = code[index]
 
@@ -42,11 +42,11 @@ def stringparser(code):
             index += 1
             char = code[index]
             
-        buffer += code[index]
+        buffer.append(char)
 
         index += 1
 
-    return buffer, index + 1
+    return "".join(buffer), index
 
 runtime.sigil(
     stringparser,
@@ -67,7 +67,7 @@ runtime.builtin(
 
 # run
 runtime.run(
-    '%1 %2 .add .echo "Hello " \'world!\' .add .echo'
+    '%1 %2 .add .echo "\\"Hello " \'world!\\"\' .add .echo'
 )
 ```
 
