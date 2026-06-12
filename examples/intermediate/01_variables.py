@@ -63,5 +63,5 @@ def echo(stack):
     print(val)
 
 runtime.run(
-    "%5 .echo %6 <int> .let $int .echo"
+    "%5 .echo %6 <foo> .let $foo .echo"
 )
