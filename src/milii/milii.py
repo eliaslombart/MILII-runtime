@@ -10,7 +10,7 @@ class DataInterface(Protocol):
 Builtin = Callable[[DataInterface], Any]
 Parser = Callable[[str], tuple[Any, int]]
 
-class UserRuntimeError(Exception):
+class InterpreterRuntimeError(Exception):
     """Exception class for the user or non-runtime specific functions, used when an error occurs during interpretation."""
 
     def __init__(self, msg: str) -> None:
@@ -111,9 +111,13 @@ class Stack(DataInterface):
     def __ne__(self, other) -> bool:
         return not (self == other)
 
-def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Parser:
+# a noop used by simple_parser as a default for the `cast`-parameter
+def _identity(x: Any) -> Any:
+    return x
+
+def simple_parser(*, end: str, cast: Callable[[str], Any] = _identity) -> Parser:
     """
-    Very simple interface for making a parser that ends at a character `end`.
+    Very simple interface for making a parser that ends at a character `end` or the end of the code it is given.
     `cast` is applied to the parsed substring before it is returned.
 
     Example:
@@ -140,22 +144,15 @@ def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Parser:
             buffer.append(code[index])
             index += 1
 
-        try:
-            buffer = "".join(buffer)
-        except:
-            raise UserRuntimeError(f"During parsing an error occurred when trying to concatenate `{buffer}`.") from None
+        # since EOF is a valid terminator, there don't need to be any checks regarding it
+        buffer = "".join(buffer)
 
         try:
             return cast(buffer), index
-        except:
-            raise UserRuntimeError(f"During parsing a error occurred when trying to cast `{buffer}` using `{cast}`.") from None
+        except Exception:
+            raise InterpreterRuntimeError(f"During parsing a error occurred when trying to cast {buffer!r} using {cast!r}.")
 
     return parser
-
-# used for type hints
-class MiliiRuntime:
-    _builtins = None
-    _sigils = None
 
 class MiliiRuntime:
     """
@@ -185,7 +182,7 @@ class MiliiRuntime:
 
             super().__init__(message)
 
-    def __init__(self, parent: MiliiRuntime | None = None):
+    def __init__(self, parent: "MiliiRuntime | None" = None):
         self._builtins: dict[str, Builtin] = {}
         self._sigils:   dict[str, tuple[Parser, bool]]  = {}
 
@@ -297,7 +294,7 @@ class MiliiRuntime:
 
     def _get_builtin(self, f: str) -> Builtin:
         if not self.is_builtin(f):
-            raise self.InterpreterRuntimeError(f"`{f}` is not a recognized builtin function.")
+            raise InterpreterRuntimeError(f"`{f}` is not a recognized builtin function.")
 
         return self._builtins[f]
 
@@ -355,8 +352,6 @@ class MiliiRuntime:
                     # by getting the corresponding function (if it exists)
                     # and calling it with `data`
                     # if it doesn't return None, push the value
-                    error_handler = lambda msg: self.InterpreterRuntimeError(msg, code, index - index_offset)
-
                     res = self._get_builtin(parser_res)(data)
                     if res is not None:
                         data.push(res)
