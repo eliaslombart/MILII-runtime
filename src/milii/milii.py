@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Any, Iterable, Callable, Protocol, runtime_checkable
 
 @runtime_checkable
@@ -132,7 +133,7 @@ def simple_parser(*, end: str, cast: Callable[[str], Any] = _identity) -> Parser
         raise TypeError(f"`end` must be a string of length 1, not {type(end).__name__}")
 
     if len(end) != 1:
-        raise ValueError(f"`end` must be of length 1, not {len(end)}")
+        raise ValueError(f"`end` must be of length 1, not length {len(end)}")
 
     if not callable(cast):
         raise TypeError(f"`cast` must be a function/callable, not {type(cast).__name__}.")
@@ -182,7 +183,7 @@ class MiliiRuntime:
 
             super().__init__(message)
 
-    def __init__(self, parent: "MiliiRuntime | None" = None):
+    def __init__(self, parent: MiliiRuntime | None = None):
         self._builtins: dict[str, Builtin] = {}
         self._sigils:   dict[str, tuple[Parser, bool]]  = {}
 
@@ -198,13 +199,15 @@ class MiliiRuntime:
         The optional `name` parameter should be a string. It can overwrite `func.__name__`, or add that functionality
         completely.
         Can be used as a decorator, or just as a function:
-        @builtin
+        rt = MiliiRuntime()
+
+        @rt.builtin
         def func(data):...
 
-        @builtin(name="+")
+        @rt.builtin(name="+")
         def add(data):...
 
-        builtin(print, name="echo")
+        rt.builtin(print, name="echo")
         """
 
         def decorator(f: Builtin) -> Builtin:
@@ -254,13 +257,15 @@ class MiliiRuntime:
         If `executable` (remains) False, the returned `value` is instead pushed to the stack.
 
         `sigil` can be used as both a decorator and a function:
+        rt = MiliiRuntime()
+
         # simple integer parser.
-        sigil(
+        rt.sigil(
            simple_parser(end=" ", cast=int),
            sigil="~"
         )
 
-        @sigil(sigil="\"")
+        @rt.sigil(sigil="\"")
         def stringparser(code):...
         """
 
@@ -269,7 +274,7 @@ class MiliiRuntime:
                 raise TypeError(f"`sigil` must be a string of length 1, not a {type(sigil).__name__}.")
 
             if len(sigil) != 1:
-                raise ValueError(f"`sigil` must be a string of length 1, not {len(sigil)}.")
+                raise ValueError(f"`sigil` must be a string of length 1, not length {len(sigil)}.")
 
             if not callable(p):
                 raise TypeError(f"`parser` must be callable or a function, not {type(p).__name__}.")
@@ -308,7 +313,7 @@ class MiliiRuntime:
         """
 
         if not isinstance(code, str):
-            raise TypeError(f"`code` should be a string, not {code}.")
+            raise TypeError(f"`code` should be a string, not {type(code).__name__}.")
 
         if data is None:
             data = Stack()
