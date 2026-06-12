@@ -143,6 +143,11 @@ def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Parser:
 
     return parser
 
+# used for type hints
+class MiliiRuntime:
+    _builtins = None
+    _sigils = None
+
 class MiliiRuntime:
     """
     A class that represents a MILII runtime. Each instance have their own sigils and builtins.
@@ -171,9 +176,13 @@ class MiliiRuntime:
 
             super().__init__(message)
 
-    def __init__(self):
+    def __init__(self, parent: MiliiRuntime | None = None):
         self._builtins: dict[str, Builtin] = {}
         self._sigils:   dict[str, tuple[Parser, bool]]  = {}
+
+        if parent is not None:
+            self._builtins = parent._builtins
+            self._sigils = parent._sigils
 
     def builtin(self, function: Builtin | None = None, *, name: str | None = None) -> Callable[[Builtin], Builtin] | Builtin:
         """
@@ -341,8 +350,9 @@ class MiliiRuntime:
                     if res is not None:
                         data.push(res)
                 else:
-                    # otherwise push it to `data`
-                    data.push(parser_res)
+                    # otherwise push it to `data` (unless its None)
+                    if parser_res is not None:
+                        data.push(parser_res)
 
             index += 1
 
