@@ -11,7 +11,7 @@ Builtin = Callable[[DataInterface], Any]
 Parser = Callable[[str], tuple[Any, int]]
 
 class UserRuntimeError(Exception):
-    """Exception class for the user, used when an error occurs during interpretation."""
+    """Exception class for the user or non-runtime specific functions, used when an error occurs during interpretation."""
 
     def __init__(self, msg: str) -> None:
         super().__init__(msg)
@@ -139,7 +139,16 @@ def simple_parser(*, end: str, cast: Callable = lambda x: x) -> Parser:
         while index < len(code) and code[index] != end:
             buffer.append(code[index])
             index += 1
-        return cast("".join(buffer)), index
+
+        try:
+            buffer = "".join(buffer)
+        except:
+            raise UserRuntimeError(f"During parsing an error occurred when trying to concatenate `{buffer}`.") from None
+
+        try:
+            return cast(buffer), index
+        except:
+            raise UserRuntimeError(f"During parsing a error occurred when trying to cast `{buffer}` using `{cast}`.") from None
 
     return parser
 
@@ -181,8 +190,8 @@ class MiliiRuntime:
         self._sigils:   dict[str, tuple[Parser, bool]]  = {}
 
         if parent is not None:
-            self._builtins = parent._builtins
-            self._sigils = parent._sigils
+            self._builtins = parent._builtins.copy()
+            self._sigils = parent._sigils.copy()
 
     def builtin(self, function: Builtin | None = None, *, name: str | None = None) -> Callable[[Builtin], Builtin] | Builtin:
         """
@@ -237,6 +246,8 @@ class MiliiRuntime:
         The runtime would then resume on the '1'-character.
 
         If the returned `value` is None, it will be ignored instead, and not modify the data.
+        The returned `index-offset` can be negative, which allows structures like loops to exist. It is however advised to be very careful as the runtime is VERY lenient when it comes to this.
+        Bad usage may lead to unexpected infinite loops that can be very hard to debug. A better pattern would be a recursive function, although that has its limitations as well.
 
         `sigil` should be a string of length 1, that denotes the start of the block that should be parsed.
         The ending/closing character is handled by the sigil-parser.
@@ -284,10 +295,9 @@ class MiliiRuntime:
         """
         return function in self._builtins
 
-    def _get_builtin(self, f: str, *,
-                     error_handler: Callable[[str], Any] = lambda msg: UserRuntimeError(msg)) -> Builtin:
+    def _get_builtin(self, f: str) -> Builtin:
         if not self.is_builtin(f):
-            raise error_handler(f"`{f}` is not a recognized builtin function.")
+            raise self.InterpreterRuntimeError(f"`{f}` is not a recognized builtin function.")
 
         return self._builtins[f]
 
@@ -347,7 +357,7 @@ class MiliiRuntime:
                     # if it doesn't return None, push the value
                     error_handler = lambda msg: self.InterpreterRuntimeError(msg, code, index - index_offset)
 
-                    res = self._get_builtin(parser_res, error_handler=error_handler)(data)
+                    res = self._get_builtin(parser_res)(data)
                     if res is not None:
                         data.push(res)
                 else:
