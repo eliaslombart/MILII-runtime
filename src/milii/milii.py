@@ -12,7 +12,7 @@ Builtin = Callable[[DataInterface], Any]
 Parser = Callable[[str], tuple[Any, int]]
 
 class InterpreterRuntimeError(Exception):
-    """Exception class for the user or non-runtime specific functions, used when an error occurs during interpretation."""
+    """Contextless exception class for the user or non-runtime specific functions, used when an error occurs during interpretation."""
 
     def __init__(self, msg: str) -> None:
         super().__init__(msg)

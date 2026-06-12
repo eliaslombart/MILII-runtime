@@ -1,6 +1,9 @@
 # this file contain a (limited) implementation of the forth programming language.
 # the code might not be the prettiest, but it is a proof of concept after all
 
+# there might be many bugs as well, but this is more of a proof of concept, rather
+# than making something that is actually useful/stable
+
 import string
 from milii import *
 
@@ -68,14 +71,11 @@ rt.sigil(
 multi_parser(command_chars, command_parser, executable=True)
 multi_parser("0123456789", integer_parser)
 
-def noop(stack):...
-
 def conditional_builtin(function = None):
     def decorator(func):
         def wrapper(data):
             if can_run():
                 return func(data)
-            return noop(data)
         return wrapper
 
     if function is None:
@@ -129,12 +129,8 @@ def IF(stack):
         run_now.append(True)
 
 @rt.builtin(name="ELSE")
-@conditional_builtin
 def ELSE(stack):
-    if not can_run():
-        run_now[-1] = True
-    else:
-        run_now[-1] = False
+    run_now[-1] = not run_now[-1]
 
 @rt.builtin(name="THEN")
 def THEN(stack):
@@ -156,6 +152,7 @@ def dup(stack):
 def drop(stack):
     stack.pop()
 
+# the example from the wiki: https://en.wikipedia.org/wiki/Forth_(programming_language)#Overview
 rt.run(
-    ": FLOOR5 DUP 6 < IF DROP 5 ELSE 1 - THEN ; 4 FLOOR5 ."
+    ": FLOOR5 DUP 6 < IF DROP 5 ELSE 1 - THEN ; 4 FLOOR5 . 7 FLOOR5 ."
 )
