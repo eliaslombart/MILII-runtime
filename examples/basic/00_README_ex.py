@@ -56,5 +56,5 @@ runtime.builtin(
 
 # run
 runtime.run(
-    '%1 %2 .add .echo "Hello " \'world!"\' .add .echo'
+    '%1 %2 .add .echo "Hello " \'world!\' .add .echo'
 )

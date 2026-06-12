@@ -38,29 +38,26 @@ def stringparser(code):
         if char in '"\'':
             break
 
-        if char == "\\" and index < len(code) - 1:
+        if char == "\\" and index < len(code) -1:
             index += 1
             char = code[index]
-
+            
         buffer += code[index]
 
         index += 1
 
     return buffer, index + 1
 
-
 runtime.sigil(
     stringparser,
     sigil="'"
 )
-
 
 # add function
 @runtime.builtin()
 def add(data):
     a, b = data.popn(2)
     return a + b
-
 
 # print function
 runtime.builtin(
@@ -70,7 +67,7 @@ runtime.builtin(
 
 # run
 runtime.run(
-    '%1 %2 .add .echo "Hello " \'world!"\' .add .echo'
+    '%1 %2 .add .echo "Hello " \'world!\' .add .echo'
 )
 ```
 
