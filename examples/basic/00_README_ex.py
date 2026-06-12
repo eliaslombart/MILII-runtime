@@ -1,3 +1,5 @@
+# the example from the readme
+
 from milii import *
 
 # define a milii runtime
