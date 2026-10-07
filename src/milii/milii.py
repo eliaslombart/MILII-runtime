@@ -71,7 +71,7 @@ class Stack(DataInterface):
 
         ret = self._stack[-number:]
         del self._stack[-number:]
-        return (ret,)
+        return (*ret,)
 
     def pop_all(self) -> tuple[Any, ...]:
         """pops and returns all the items of the stack, in bottom-to-top order"""
