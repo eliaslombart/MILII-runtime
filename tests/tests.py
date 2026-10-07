@@ -84,7 +84,7 @@ class TestEnv:
     Tests can be activated or deactivated using the `TestEnv.activate` and `TestEnv.deactivate` methods.
     """
 
-    def __init__(self, *, warmup: bool=False, warmup_time_seconds: int=15):
+    def __init__(self, *, warmup: bool=False, warmup_time_seconds: int=0):
         self._tests = {}
 
         if warmup:
