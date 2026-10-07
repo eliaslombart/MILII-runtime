@@ -21,7 +21,7 @@ class Stack(DataInterface):
     """
     A Stack class.
 
-    If multiple items are returned through popn and pop_all, they are returned as a list, where the first element was the lowest item.
+    If multiple items are returned through popn and pop_all, they are returned as a tuple, where the first element was the lowest item.
 
     `push_all` pushes the first element of the iterable first, so the first element is the bottommost element.
     """
@@ -37,9 +37,6 @@ class Stack(DataInterface):
         self._stack = []
 
         if data is not None:
-            if not isinstance(data, Iterable):
-                raise TypeError(f"`data` should be Iterable, not {type(data).__name__}.")
-
             for v in data:
                 self.push(v)
 
@@ -55,7 +52,7 @@ class Stack(DataInterface):
         if len(self._stack) == 0:
             raise self.StackError("cannot pop as Stack is empty.")
 
-        return self._stack.pop(-1)
+        return self._stack.pop()
 
     def popn(self, number: int) -> tuple[Any, ...]:
         """pops and returns the top `number` items of the stack, in bottom-to-top order"""
@@ -70,11 +67,11 @@ class Stack(DataInterface):
 
         if number == 0:
             # otherwise the entire stack is returned, and it's also not an invalid value per se
-            return tuple()
+            return ()
 
         ret = self._stack[-number:]
         del self._stack[-number:]
-        return tuple(ret)
+        return (ret,)
 
     def pop_all(self) -> tuple[Any, ...]:
         """pops and returns all the items of the stack, in bottom-to-top order"""
@@ -104,13 +101,7 @@ class Stack(DataInterface):
         return bool(self._stack)
 
     def __eq__(self, other) -> bool:
-        return isinstance(other, Stack) and len(self) == len(other) and all(
-            a == b
-            for a, b in zip(self._stack, other._stack)
-        )
-
-    def __ne__(self, other) -> bool:
-        return not (self == other)
+        return isinstance(other, Stack) and self._stack == other._stack
 
 # a noop used by simple_parser as a default for the `cast`-parameter
 def _identity(x: Any) -> Any:
